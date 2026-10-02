@@ -1,6 +1,7 @@
 (* Copyright 2026 Department of Code LLC.
    SPDX-License-Identifier: AGPL-3.0-or-later *)
 
+
 (**
 Network.IPv4.Pulse — C-extractable IPv4 wire codec via Pulse + Custard.
 
@@ -38,6 +39,7 @@ Written for F* v2026.09.20 (Custard `--custard_backend C`).  Zero admits.
 module Network.IPv4.Pulse
 #lang-pulse
 
+
 open Pulse
 open Pulse.Lib.Reference
 module A = Pulse.Lib.Array
@@ -46,12 +48,16 @@ module U8 = FStar.UInt8
 module U32 = FStar.UInt32
 module Seq = FStar.Seq
 
+
 open FStar.Seq
+
 
 (* ── Types (alphabetical) ──────────────────────────────────────────── *)
 
+
 (** IPv4 wire format size in bytes (32 bits / 8). *)
 let ipv4_wire_size : U32.t = 4ul
+
 
 (** [ipv4_wire] — four octets (32-bit wire format). *)
 type ipv4_wire = {
@@ -61,18 +67,22 @@ type ipv4_wire = {
   octet3: U8.t;
 }
 
+
 (** [opt_ipv4_wire] — option wrapper for the decode result (C-friendly, no
     [option]). *)
 type opt_ipv4_wire =
   | OIPv4_None
   | OIPv4_Some of (ipv4_wire & U32.t)
 
+
 (* ── Pure spec (noextract: not C-representable) ─────────────────────── *)
+
 
 (** [encode_spec addr] — serialize [addr] to a 4-byte list in wire order. *)
 noextract
 let encode_spec (addr: ipv4_wire) : list U8.t =
   [addr.octet0; addr.octet1; addr.octet2; addr.octet3]
+
 
 (** [decode_spec bs] — deserialize a 4-byte list to [ipv4_wire] plus
     wire size.  Returns [None] unless [bs] has exactly 4 bytes. *)
@@ -83,7 +93,9 @@ let decode_spec (bs: list U8.t) : option (ipv4_wire & U32.t) =
     Some ({octet0=b0; octet1=b1; octet2=b2; octet3=b3}, 4ul)
   | _ -> None
 
+
 (* ── Encode ─────────────────────────────────────────────────────────── *)
+
 
 (** [encode addr buf off] — encode an IPv4 address into [buf] at [off];
     returns 4 (bytes written).
@@ -122,7 +134,9 @@ fn encode (addr: ipv4_wire) (buf: A.array U8.t) (off: U32.t)
   4ul
 }
 
+
 (* ── Decode ─────────────────────────────────────────────────────────── *)
+
 
 (** [decode buf off len] — decode an IPv4 address from [buf] at [off].
 
@@ -166,13 +180,16 @@ fn decode (buf: A.array U8.t) (off: U32.t) (len: U32.t)
   }
 }
 
+
 (* ── Roundtrip lemmas (alphabetical) ────────────────────────────────── *)
+
 
 (** [lemma_roundtrip addr] — pure roundtrip: encoding then decoding returns
     the original address. *)
 let lemma_roundtrip (addr: ipv4_wire)
   : Lemma (decode_spec (encode_spec addr) == Some (addr, ipv4_wire_size))
   = ()
+
 
 (** [lemma_pulse_roundtrip addr buf off] — encode then decode an IPv4
     address roundtrips.
@@ -197,6 +214,7 @@ fn lemma_pulse_roundtrip (addr: ipv4_wire) (buf: A.array U8.t) (off: U32.t)
   let r = decode buf off ipv4_wire_size;
   (n, r)
 }
+
 
 (** [lemma_pulse_encode_decode_match addr buf off] — master roundtrip for
     IPv4.

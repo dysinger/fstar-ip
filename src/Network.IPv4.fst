@@ -1,6 +1,7 @@
 (* Copyright 2026 Department of Code LLC.
    SPDX-License-Identifier: AGPL-3.0-or-later *)
 
+
 (**
 Network.IPv4 — IPv4 Address codec (RFC 791 §3.1).
 
@@ -31,7 +32,9 @@ Roundtrip proof: list-level structural induction (0 admits), bridged to
 - RFC test vectors with list-level decode (0 admits)
 *)
 
+
 module Network.IPv4
+
 
 open Data.Codec
 open Data.BaseN
@@ -40,7 +43,9 @@ open FStar.List.Tot
 module U8 = FStar.UInt8
 open Network.IP
 
+
 (** Types *)
+
 
 (** IPv4 address: four octets in network byte order (RFC 791 §3.1). *)
 type ipv4 = {
@@ -50,6 +55,7 @@ type ipv4 = {
   octet3 : byte;
 }
 
+
 (** [ipv4_of_octets] constructs an [ipv4] from four octets.
     @param octet0 First octet.  @param octet1 Second octet.
     @param octet2 Third octet.  @param octet3 Fourth octet.
@@ -57,7 +63,9 @@ type ipv4 = {
 let ipv4_of_octets (octet0 octet1 octet2 octet3: byte) : ipv4 =
   {octet0; octet1; octet2; octet3}
 
+
 (** Digit helper *)
+
 
 (** [lemma_digits_encode_length] proves [digits_encode n] has at most 3 digits
     for any [n <= 255].  Required by the [wfcv] guard.
@@ -68,8 +76,10 @@ let lemma_digits_encode_length (n: nat) : Lemma
   (ensures List.Tot.length (digits_encode n) <= 3)
   = if n < 10 then () else if n < 100 then () else ()
 
+
 (** Dot separator byte (ASCII '.' = 0x2E). *)
 let ipv4_sep : byte = 0x2Euy
+
 
 (** Lemma: [ipv4_sep] equals the literal [0x2Euy].  Connects the named
     constant with the concrete literal for SMT transparency and serves
@@ -77,12 +87,15 @@ let ipv4_sep : byte = 0x2Euy
     @returns Lemma — [ipv4_sep == 0x2Euy]. *)
 let lemma_ipv4_sep_value () : Lemma (ipv4_sep == 0x2Euy) = ()
 
+
 (** List-level encode/decode *)
+
 
 (** The list-level functions use explicit [digits_encode] /
     [digits_to_int_decode_go] — no codec combinators.  Roundtrip
     is proven by direct structural decomposition (fstar-proofs §14).
 *)
+
 
 (** [encode_ipv4_list] serializes an [ipv4] to a byte list in dotted-decimal
     format.
@@ -93,6 +106,7 @@ let encode_ipv4_list (v: ipv4) : list byte =
   digits_encode (U8.v v.octet1) @ [ipv4_sep] @
   digits_encode (U8.v v.octet2) @ [ipv4_sep] @
   digits_encode (U8.v v.octet3)
+
 
 (** [decode_octet_list] parses 1-3 decimal digits from a byte list into a byte.
     Uses [digits_to_int_decode_go] directly — no codec combinators.
@@ -108,6 +122,7 @@ let decode_octet_list (ds: list byte) : option (byte & n:nat{n <= 3}) =
     if 0 <= n && n <= 255 then Some (U8.uint_to_t n, consumed)
     else None
   | Inl _ -> None
+
 
 (** [decode_ipv4_list] parses dotted-decimal bytes into an [ipv4].
     Explicit [if None?] / [Some?.v] style — SMT can follow this structure.
@@ -145,13 +160,16 @@ let decode_ipv4_list (bs: list byte) : option (ipv4 & nat) =
                 let (o3, n3) = Some?.v step3 in
                 Some ({octet0=o0;octet1=o1;octet2=o2;octet3=o3}, n0+1+n1+1+n2+1+n3)
 
+
 (** Octet roundtrip lemmas *)
+
 
 (** Note: [lemma_octet_roundtrip_empty] and [lemma_octet_roundtrip_dot]
     use [lemma_acc_digits_encode_helper] and [lemma_digits_encode_all_digits_helper]
     from [Data.Codec.Types] to expose digit-encoding properties to SMT.
     These are not just documentation — without them, SMT cannot
     see that [digits_encode] output consists of all-digit bytes. *)
+
 
 (** Single octet roundtrip with no suffix (last octet in the address).
     @param b A byte value.
@@ -167,6 +185,7 @@ let lemma_octet_roundtrip_empty (b: byte) : Lemma
     lemma_digits_decode_encode_roundtrip (fun v -> 0 <= v && v <= 255) 3 n FStar.Seq.empty;
     lemma_seq_of_list_length (digits_encode n)
 #pop-options
+
 
 (** Single octet roundtrip with suffix starting with dot (0x2E).
     The suffix starts with the dot separator, which is not a digit,
@@ -191,7 +210,9 @@ let lemma_octet_roundtrip_dot (b: byte) (suffix: list byte) : Lemma
     lemma_seq_of_list_length (digits_encode n)
 #pop-options
 
+
 (** List-level IPv4 roundtrip *)
+
 
 (** RFC 791 §3.1 ¶1 roundtrip: for all [v: ipv4],
     [decode_ipv4_list (encode_ipv4_list v) == Some (v, |enc_v|)].
@@ -240,7 +261,9 @@ let lemma_ipv4_list_roundtrip (v: ipv4) : Lemma
     ()
 #pop-options
 
+
 (** Codec-level functions *)
+
 
 (** Well-formed-value guard: always true for [ipv4] — every field is
     [UInt8.t] which guarantees [v ∈ 0..255] by type definition.
@@ -253,10 +276,12 @@ let wfcv_ipv4 (v: ipv4) : bool =
   U8.v v.octet2 <= 255 &&
   U8.v v.octet3 <= 255
 
+
 (** Well-formed-value property: always True (refinement type guarantees range).
     @param v IPv4 address value.
     @returns True — octet range enforced by [ipv4] refinement type. *)
 let wfcv_prop_ipv4 (v: ipv4) : prop = True
+
 
 (** Rest condition: suffix must be empty.
     The [digits_to_int]-based octet decoder is digit-greedy — it consumes
@@ -274,12 +299,14 @@ let wfcv_prop_ipv4 (v: ipv4) : prop = True
 let rest_cond_ipv4 (v: ipv4) (r: byte_seq) : prop =
   r == Seq.empty
 
+
 (** Encoder: [ipv4 → byte_seq].
     Delegates to the list-level encoder.
     @param v IPv4 address to encode.
     @returns Byte sequence of encoded dotted-decimal format. *)
 let ipv4_enc (v: ipv4) : byte_seq =
   seq_of_list (encode_ipv4_list v)
+
 
 (** Decoder: [byte_seq → decode_result ipv4].
     Delegates to the list-level decoder.
@@ -289,6 +316,7 @@ let ipv4_dec (s: byte_seq) : decode_result ipv4 =
   match decode_ipv4_list (Seq.seq_to_list s) with
   | Some (v, n) -> Inr (v, n)
   | None -> Inl (mk_decode_error ExpectedPredicate 0)
+
 
 (** Decoder error position bound.
     Body is [()] because [mk_decode_error ExpectedPredicate 0]
@@ -300,6 +328,7 @@ let lemma_ipv4_dec_err_bound (s: byte_seq) : Lemma
             | Inl err -> err.err_pos <= Seq.length s
             | _ -> True))
   = ()
+
 
 (** Lemma: [decode_octet_list] consumed <= input length.
     Follows from the seq decoder bound [lemma_digits_decode_go_len_bound]
@@ -314,6 +343,7 @@ let lemma_decode_octet_list_consumed (ds: list byte) : Lemma
     lemma_seq_of_list_length ds;
     lemma_digits_decode_go_len_bound (fun v -> 0 <= v && v <= 255) s 3 0 0;
     ()
+
 
 (** Lemma: [decode_ipv4_list] consumed is bounded by input length.
     Proves the telescoping bound: each octet at index [i] consumes
@@ -371,6 +401,7 @@ let lemma_decode_ipv4_list_consumed (bs: list byte) : Lemma
         end
     end
 
+
 (** Decoder consumed bound.  Uses [lemma_decode_ipv4_list_consumed].
     @param s Input byte sequence.
     @returns Lemma — consumed bytes ≤ sequence length when decode succeeds. *)
@@ -381,6 +412,7 @@ let lemma_ipv4_dec_consumed_bound (s: byte_seq) : Lemma
   = lemma_seq_list_bij s;
     lemma_decode_ipv4_list_consumed (Seq.seq_to_list s);
     ()
+
 
 (** Roundtrip lemma: encode→decode returns the original value.
     Bridges the list-level proof to byte_seq.  Only handles the
@@ -407,6 +439,7 @@ let lemma_ipv4_roundtrip (v: ipv4) (r: byte_seq) : Lemma
     Seq.lemma_eq_intro (enc_seq `Seq.append` Seq.empty) enc_seq
 #pop-options
 
+
 (** The IPv4 codec: flat [custom] combinator, no [product]/[map_] chain.
     Roundtrip proof bridges the list-level structural induction.
     Zero admits.
@@ -424,12 +457,15 @@ let ipv4_codec : codec ipv4 =
     lemma_ipv4_dec_consumed_bound
 #pop-options
 
+
 (** Public API *)
+
 
 (** [encode_ipv4] serializes an [ipv4] to dotted-decimal bytes.
     @param ip Address to encode.
     @returns Byte sequence of encoded dotted-decimal format. *)
 let encode_ipv4 (ip: ipv4) : byte_seq = ipv4_codec.enc ip
+
 
 (** [decode_ipv4] parses dotted-decimal bytes into an [ipv4].
     @param input Byte sequence to decode.
@@ -437,12 +473,14 @@ let encode_ipv4 (ip: ipv4) : byte_seq = ipv4_codec.enc ip
 let decode_ipv4 (input: byte_seq) : Tot (option ipv4) =
   match ipv4_codec.dec input with Inl _ -> None | Inr (v, _) -> Some v
 
+
 (** Roundtrip wrapper: [decode_ipv4 (encode_ipv4 v) == Some v].
     @param v An ipv4 value.
     @returns Lemma — [decode_ipv4 (encode_ipv4 v) == Some v]. *)
 let lemma_encode_ipv4_roundtrip (v: ipv4) : Lemma
   (ensures decode_ipv4 (encode_ipv4 v `FStar.Seq.append` FStar.Seq.empty) == Some v)
   = lemma_ipv4_roundtrip v Seq.empty
+
 
 (** Codec-level roundtrip (backward compat alias).
     @param v An ipv4 value.
@@ -452,7 +490,9 @@ let lemma_roundtrip (v: ipv4) : Lemma
         == Inr (v, FStar.Seq.length (ipv4_codec.enc v)))
   = lemma_ipv4_roundtrip v Seq.empty
 
+
 (** RFC compliance *)
+
 
 (** RFC 791 §3.1 ¶2: Each octet SHALL be in the range 0-255.
     Proves: for all [b: byte], [U8.v b ∈ [0, 255]].
@@ -464,7 +504,9 @@ let lemma_octet_range (b: byte) : Lemma
   (ensures U8.v b >= 0 /\ U8.v b <= 255)
   = ()
 
+
 (** RFC test vectors *)
+
 
 (** Test vectors use list-level decode — the [assert_norm]-computed
     encoding combined with [lemma_ipv4_list_roundtrip] proves the
@@ -478,6 +520,7 @@ let lemma_octet_range (b: byte) : Lemma
     - Limited broadcast (RFC 919)
 *)
 
+
 (** Loopback: 127.0.0.1 (RFC 1122 §3.2.1.3).
     @returns Lemma — roundtrip for [127.0.0.1]. *)
 let lemma_ipv4_localhost_concrete () : Lemma
@@ -487,6 +530,7 @@ let lemma_ipv4_localhost_concrete () : Lemma
                            /\ ip.octet2 = 0uy /\ ip.octet3 = 1uy
             | _ -> False))
   = lemma_ipv4_list_roundtrip ({octet0=127uy;octet1=0uy;octet2=0uy;octet3=1uy})
+
 
 (** Private network: 192.168.1.1 (RFC 1918).
     @returns Lemma — roundtrip for [192.168.1.1]. *)
@@ -498,6 +542,7 @@ let lemma_ipv4_private_concrete () : Lemma
             | _ -> False))
   = lemma_ipv4_list_roundtrip ({octet0=192uy;octet1=168uy;octet2=1uy;octet3=1uy})
 
+
 (** Unspecified: 0.0.0.0 (RFC 1122 §3.2.1.3).
     @returns Lemma — roundtrip for [0.0.0.0]. *)
 let lemma_ipv4_zero_concrete () : Lemma
@@ -507,6 +552,7 @@ let lemma_ipv4_zero_concrete () : Lemma
                            /\ ip.octet2 = 0uy /\ ip.octet3 = 0uy
             | _ -> False))
   = lemma_ipv4_list_roundtrip ({octet0=0uy;octet1=0uy;octet2=0uy;octet3=0uy})
+
 
 (** Limited broadcast: 255.255.255.255 (RFC 919).
     @returns Lemma — roundtrip for [255.255.255.255]. *)

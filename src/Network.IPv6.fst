@@ -1,6 +1,7 @@
 (* Copyright 2026 Department of Code LLC.
    SPDX-License-Identifier: AGPL-3.0-or-later *)
 
+
 (**
 Network.IPv6 — IPv6 Address codec (RFC 4291 §2.2).
 
@@ -46,7 +47,9 @@ Roundtrip proof: list-level structural induction (0 admits), bridged to
 - RFC test vectors with list-level decode (0 admits)
 *)
 
+
 module Network.IPv6
+
 
 open Data.Codec
 open Data.BaseN
@@ -54,13 +57,17 @@ open FStar.Seq
 open FStar.List.Tot
 open Network.IP
 
+
 module U8 = FStar.UInt8
 module L  = FStar.List.Tot
 
+
 (** Types *)
+
 
 (** IPv6 address group: 16-bit unsigned integer in [0, 65535]. *)
 type ipv6_group = g:int{0 <= g /\ g <= 65535}
+
 
 (** IPv6 address: eight 16-bit groups.  Each field is refined to
     guarantee [0 <= g <= 65535]; no runtime validation needed. *)
@@ -75,6 +82,7 @@ type ipv6 = {
   group7 : ipv6_group;
 }
 
+
 (** Validated constructor.  Returns [None] if any group is out of range.
     @param g0-g7 Each group value, must be 0-65535 to succeed. *)
 let ipv6_of_groups (g0 g1 g2 g3 g4 g5 g6 g7: int) : Tot (option ipv6) =
@@ -86,22 +94,27 @@ let ipv6_of_groups (g0 g1 g2 g3 g4 g5 g6 g7: int) : Tot (option ipv6) =
   else Some {group0 = g0; group1 = g1; group2 = g2; group3 = g3;
              group4 = g4; group5 = g5; group6 = g6; group7 = g7}
 
+
 (** RFC 4291: loopback address ::1 (full form: 0:0:0:0:0:0:0:1). *)
 let ipv6_loopback : ipv6 =
   {group0 = 0; group1 = 0; group2 = 0; group3 = 0;
    group4 = 0; group5 = 0; group6 = 0; group7 = 1}
+
 
 (** RFC 4291: unspecified address :: (full form: 0:0:0:0:0:0:0:0). *)
 let ipv6_unspecified : ipv6 =
   {group0 = 0; group1 = 0; group2 = 0; group3 = 0;
    group4 = 0; group5 = 0; group6 = 0; group7 = 0}
 
+
 (** Hex group encode/decode *)
+
 
 (** RFC 4291: each group represents 16 bits.  Leading zeros may be
     omitted, but at least one digit must be present.  Hex digits
     accept 0-9, A-F, a-f.  Encoder uses uppercase.
 *)
+
 
 (** [encode_hex_group_go] tail-recursive helper: writes hex digits of [m]
     followed by [acc].  Top-level so SMT can encode it.
@@ -111,11 +124,13 @@ let rec encode_hex_group_go (m: nat) (acc: list byte) : Tot (list byte) (decreas
   if m = 0 then acc
   else encode_hex_group_go (m / 16) (nibble_to_upper_hex (m % 16) :: acc)
 
+
 (** [encode_hex_group] converts a nat ≤65535 to minimal hex digits.
     @param n Value to encode, in [0, 65535].  @returns 1-4 uppercase hex digit bytes. *)
 let encode_hex_group (n: nat{n <= 65535}) : list byte =
   if n = 0 then [nibble_to_upper_hex 0]
   else encode_hex_group_go n []
+
 
 (** [decode_hex_group_go] top-level recursive helper for hex digit parsing.
     @param ds Remaining hex digit bytes.  @param acc Accumulated value.
@@ -133,6 +148,7 @@ let rec decode_hex_group_go (ds: list byte) (acc: int) (cnt: nat)
       else decode_hex_group_go tl acc' (cnt + 1)
     else Some (acc, cnt)
 
+
 (** [decode_hex_group] parses 1-4 hex digits → int 0-65535.
     Returns [None] on empty input, non-hex first char, or overflow (>65535).
     Stops on non-hex char after at least one digit — correct per RFC 4291:
@@ -145,6 +161,7 @@ let decode_hex_group (ds: list byte) : option (int & nat) =
   | d :: tl ->
     if is_hex d then decode_hex_group_go tl (hex_char_to_nibble d) 1
     else None
+
 
 (** Lemma: when [decode_hex_group_go] succeeds with accumulator in [0, 65535],
     the result is also in [0, 65535].  Induction on [ds].
@@ -167,6 +184,7 @@ let rec lemma_decode_hex_group_go_range (ds: list byte) (acc: int) (cnt: nat) : 
       else lemma_decode_hex_group_go_range tl acc' (cnt + 1)
     end else ()
 
+
 (** Lemma: when [decode_hex_group] succeeds, the decoded value is in [0, 65535].
     @param ds Hex digit bytes to decode.
     @returns Lemma — decoded value in [0, 65535] when decode succeeds. *)
@@ -181,7 +199,9 @@ let lemma_decode_hex_group_range (ds: list byte) : Lemma
       lemma_decode_hex_group_go_range tl (hex_char_to_nibble d) 1
     else ()
 
+
 (** Hex group roundtrip (0 admits) *)
+
 
 (** Lemma: encode→decode roundtrip for 0-65535.
     Induction on n.
@@ -199,7 +219,9 @@ let rec lemma_hex_group_roundtrip (n: nat) : Lemma
     end
 #pop-options
 
+
 (** Hex group consumed bound *)
+
 
 (** Lemma: [decode_hex_group_go] consumed ≤ input length.
     @param ds Input hex digit list.
@@ -221,6 +243,7 @@ let rec lemma_decode_hex_group_go_consumed_bound (ds: list byte) (acc: int) (cnt
       else lemma_decode_hex_group_go_consumed_bound tl acc' (cnt + 1)
     end else ()
 
+
 (** Lemma: [decode_hex_group] consumed ≤ input length (top-level wrapper).
     @param ds Input hex digit list.
     @returns Lemma — consumed ≤ |ds| when decode succeeds. *)
@@ -234,12 +257,15 @@ let lemma_decode_hex_group_consumed_bound (ds: list byte) : Lemma
     if is_hex d then lemma_decode_hex_group_go_consumed_bound tl (hex_char_to_nibble d) 1
     else ()
 
+
 (** Hex group codec *)
+
 
 (** Well-formed-value guard for hex group codec: int in [0, 65535].
     @param n Value to check.
     @returns [true] if [0 <= n <= 65535]. *)
 let wfcv_hex_group (n: int) : bool = 0 <= n && n <= 65535
+
 
 (** Suffix condition: byte after encoded group must not start with
     a hex digit, ensuring unambiguous parse boundaries.
@@ -247,6 +273,7 @@ let wfcv_hex_group (n: int) : bool = 0 <= n && n <= 65535
     @returns [prop] — [|r| = 0 ∨ (|r| > 0 ∧ ¬is_hex(r[0]))]. *)
 let rest_cond_hex_group (n: int) (r: byte_seq) : prop =
   FStar.Seq.length r = 0 \/ (FStar.Seq.length r > 0 /\ not (is_hex (FStar.Seq.index r 0)))
+
 
 (** Decoder: [byte_seq] → [decode_result int], via list conversion.
     @param s Input byte sequence.
@@ -256,6 +283,7 @@ let hex_group_dec (s: byte_seq) : decode_result int =
   match decode_hex_group ds with
   | Some (n, consumed) -> Inr (n, consumed)
   | None -> Inl (mk_decode_error ExpectedPredicate 0)
+
 
 (** Encoder: int → byte_seq.
 
@@ -271,6 +299,7 @@ let hex_group_enc (n: int) : byte_seq =
   let clamped : nat = if n < 0 then 0 else if n > 65535 then 65535 else n in
   seq_of_list (encode_hex_group clamped)
 
+
 (** Lemma: when [wfcv_hex_group n], [nat_of_int n <= 65535].
     @param n Value in hex group range.
     @returns Lemma — [0 <= n ∧ n <= 65535]. *)
@@ -278,6 +307,7 @@ let lemma_wfcv_hex_group_bound (n: int) : Lemma
   (requires wfcv_hex_group n)
   (ensures 0 <= n /\ n <= 65535)
   = ()
+
 
 (** Error bound: error position is always 0 ≤ |s|.
     @param s Input byte sequence.
@@ -287,6 +317,7 @@ let lemma_hex_group_dec_err_bound (s: byte_seq) : Lemma
             | Inl err -> err.err_pos <= FStar.Seq.length s
             | _ -> True))
   = ()
+
 
 (** Consumed bound: decoded bytes ≤ input length.
     @param s Input byte sequence.
@@ -301,6 +332,7 @@ let lemma_hex_group_dec_consumed_bound (s: byte_seq) : Lemma
     lemma_decode_hex_group_consumed_bound ds;
     lemma_seq_of_list_length ds
 #pop-options
+
 
 (** Lemma: [decode_hex_group_go] is transparent to a non-hex suffix.
     If the decoder is processing [ds] and encounters a non-hex suffix
@@ -323,6 +355,7 @@ let rec lemma_go_stops_at_non_hex (ds: list byte) (acc: int) (cnt: nat) (suffix:
       if acc' <= 65535 then lemma_go_stops_at_non_hex tl acc' (cnt + 1) suffix
     end else ()
 
+
 (** Lemma: [encode_hex_group_go m acc] is non-empty when [acc] is non-empty.
     @param m Value to encode.  @param acc Accumulator (must be non-empty).
     @returns Lemma — [encode_hex_group_go m acc <> []]. *)
@@ -332,6 +365,7 @@ let rec lemma_encode_hex_group_go_nonempty (m: nat) (acc: list byte) : Lemma
   (decreases m)
   = if m = 0 then ()
     else lemma_encode_hex_group_go_nonempty (m / 16) (nibble_to_upper_hex (m % 16) :: acc)
+
 
 (** Lemma: [encode_hex_group n] is always non-empty for [n <= 65535].
     @param n Value in range.
@@ -347,6 +381,7 @@ let lemma_encode_hex_group_nonempty (n: nat{n <= 65535}) : Lemma
       lemma_encode_hex_group_go_nonempty (n / 16) [d]
     )
 
+
 (** Lemma: [seq_to_list] of empty sequence is empty list.
     Definitionally true — [Seq.seq_to_list Seq.empty == []] by
     [FStar.Seq.Base] definition.  Exists for SMT transparency
@@ -356,6 +391,7 @@ let lemma_encode_hex_group_nonempty (n: nat{n <= 65535}) : Lemma
 let lemma_seq_to_list_empty () : Lemma
   (ensures Seq.seq_to_list (Seq.empty #byte) == [])
   = ()
+
 
 (** Lemma: [seq_to_list] distributes over append for [seq_of_list] prefix.
     [seq_to_list (seq_of_list l ++ s) == l ++ seq_to_list s].
@@ -452,6 +488,7 @@ let lemma_hex_group_roundtrip_seq (n: int) (r: byte_seq) : Lemma
     assert (Seq.length (hex_group_enc n) == L.length enc_list)
 #pop-options
 
+
 (** Hex group codec — proven codec for 1-4 hex digits → int 0-65535.
     0 admits.
     @returns [codec int] for 1-4 hex digits. *)
@@ -466,6 +503,7 @@ let hex_group_codec : codec int =
     lemma_hex_group_dec_err_bound
     lemma_hex_group_dec_consumed_bound
 
+
 (** Every int in 0-65535 satisfies [hex_group_codec.wfcv].
     @param n Value in range.
     @returns Lemma — [hex_group_codec.wfcv n]. *)
@@ -474,20 +512,25 @@ let lemma_hex_group_codec_wfcv (n: int) : Lemma
   (ensures hex_group_codec.wfcv n)
   = ()
 
+
 (** List-level encode/decode *)
+
 
 (** Bypasses the codec combinator chain — calls
     [encode_hex_group]/[decode_hex_group] directly with explicit
     chaining for 8 groups.
 *)
 
+
 (** Colon separator byte (ASCII ':' = 0x3A). *)
 let ipv6_sep : byte = 0x3Auy
+
 
 (** Lemma: [ipv6_sep] equals the literal [0x3Auy].  Exists for
     integration-test anchoring.
     @returns Lemma — [ipv6_sep == 0x3Auy]. *)
 let lemma_ipv6_sep_value () : Lemma (ipv6_sep == 0x3Auy) = ()
+
 
 (** [encode_ipv6_list] serializes an [ipv6] to a byte list in colon-hex format.
     @param v IPv6 address to encode.
@@ -501,6 +544,7 @@ let encode_ipv6_list (v: ipv6) : list byte =
   encode_hex_group v.group5 @ [ipv6_sep] @
   encode_hex_group v.group6 @ [ipv6_sep] @
   encode_hex_group v.group7
+
 
 (** [decode_ipv6_list] parses colon-hex bytes into an [ipv6].
     Explicit [if None?] / [Some?.v] style — SMT can follow this structure.
@@ -579,7 +623,9 @@ let decode_ipv6_list (bs: list byte) : option (ipv6 & nat) =
                                        group4=g4;group5=g5;group6=g6;group7=g7},
                                       n0+1+n1+1+n2+1+n3+1+n4+1+n5+1+n6+1+n7)
 
+
 (** Hex group roundtrip with suffix *)
+
 
 (** Hex group roundtrip with colon (0x3A) suffix.
     @param g Group value.  @param suffix Byte list starting with [ipv6_sep].
@@ -599,6 +645,7 @@ let lemma_hex_group_roundtrip_colon_suffix (g: nat) (suffix: list byte) : Lemma
       (* Unreachable: [lemma_encode_hex_group_nonempty g] proves [enc <> []] *)
       assert (False)
 
+
 (** Hex group roundtrip with empty suffix (last group).
     Thin wrapper around [lemma_hex_group_roundtrip] — provides a
     consistent naming convention.
@@ -609,7 +656,9 @@ let lemma_hex_group_roundtrip_empty (g: nat) : Lemma
   (ensures decode_hex_group (encode_hex_group g) == Some (g, L.length (encode_hex_group g)))
   = lemma_hex_group_roundtrip g
 
+
 (** List-level IPv6 roundtrip *)
+
 
 (** RFC 4291 §2.2 ¶1 roundtrip: for all [v: ipv6] with valid groups,
     [decode_ipv6_list (encode_ipv6_list v) == Some (v, |enc_v|)].
@@ -627,46 +676,48 @@ let lemma_ipv6_list_roundtrip (v: ipv6) : Lemma
     let h6 = encode_hex_group g6 in let h7 = encode_hex_group g7 in
     let enc = h0 @ [ipv6_sep] @ h1 @ [ipv6_sep] @ h2 @ [ipv6_sep] @ h3 @ [ipv6_sep] @
               h4 @ [ipv6_sep] @ h5 @ [ipv6_sep] @ h6 @ [ipv6_sep] @ h7 in
-    
+
     (* Group 0 + colon *)
     lemma_hex_group_roundtrip_colon_suffix g0 ([ipv6_sep] @ h1 @ [ipv6_sep] @ h2 @ [ipv6_sep] @ h3 @ [ipv6_sep] @ h4 @ [ipv6_sep] @ h5 @ [ipv6_sep] @ h6 @ [ipv6_sep] @ h7);
     lemma_drop_append_length h0 ([ipv6_sep] @ h1 @ [ipv6_sep] @ h2 @ [ipv6_sep] @ h3 @ [ipv6_sep] @ h4 @ [ipv6_sep] @ h5 @ [ipv6_sep] @ h6 @ [ipv6_sep] @ h7);
     assert (decode_hex_group enc == Some (g0, L.length h0));
     assert (L.hd (drop (L.length h0) enc) == ipv6_sep);
     assert (drop 1 (drop (L.length h0) enc) == h1 @ [ipv6_sep] @ h2 @ [ipv6_sep] @ h3 @ [ipv6_sep] @ h4 @ [ipv6_sep] @ h5 @ [ipv6_sep] @ h6 @ [ipv6_sep] @ h7);
-    
+
     (* Group 1 *)
     lemma_hex_group_roundtrip_colon_suffix g1 ([ipv6_sep] @ h2 @ [ipv6_sep] @ h3 @ [ipv6_sep] @ h4 @ [ipv6_sep] @ h5 @ [ipv6_sep] @ h6 @ [ipv6_sep] @ h7);
     lemma_drop_append_length h1 ([ipv6_sep] @ h2 @ [ipv6_sep] @ h3 @ [ipv6_sep] @ h4 @ [ipv6_sep] @ h5 @ [ipv6_sep] @ h6 @ [ipv6_sep] @ h7);
-    
+
     (* Group 2 *)
     lemma_hex_group_roundtrip_colon_suffix g2 ([ipv6_sep] @ h3 @ [ipv6_sep] @ h4 @ [ipv6_sep] @ h5 @ [ipv6_sep] @ h6 @ [ipv6_sep] @ h7);
     lemma_drop_append_length h2 ([ipv6_sep] @ h3 @ [ipv6_sep] @ h4 @ [ipv6_sep] @ h5 @ [ipv6_sep] @ h6 @ [ipv6_sep] @ h7);
-    
+
     (* Group 3 *)
     lemma_hex_group_roundtrip_colon_suffix g3 ([ipv6_sep] @ h4 @ [ipv6_sep] @ h5 @ [ipv6_sep] @ h6 @ [ipv6_sep] @ h7);
     lemma_drop_append_length h3 ([ipv6_sep] @ h4 @ [ipv6_sep] @ h5 @ [ipv6_sep] @ h6 @ [ipv6_sep] @ h7);
-    
+
     (* Group 4 *)
     lemma_hex_group_roundtrip_colon_suffix g4 ([ipv6_sep] @ h5 @ [ipv6_sep] @ h6 @ [ipv6_sep] @ h7);
     lemma_drop_append_length h4 ([ipv6_sep] @ h5 @ [ipv6_sep] @ h6 @ [ipv6_sep] @ h7);
-    
+
     (* Group 5 *)
     lemma_hex_group_roundtrip_colon_suffix g5 ([ipv6_sep] @ h6 @ [ipv6_sep] @ h7);
     lemma_drop_append_length h5 ([ipv6_sep] @ h6 @ [ipv6_sep] @ h7);
-    
+
     (* Group 6 *)
     lemma_hex_group_roundtrip_colon_suffix g6 ([ipv6_sep] @ h7);
     lemma_drop_append_length h6 ([ipv6_sep] @ h7);
-    
+
     (* Group 7 (last) *)
     lemma_hex_group_roundtrip_empty g7;
     lemma_drop_append_length h7 [];
-    
+
     ()
 #pop-options
 
+
 (** Codec-level functions *)
+
 
 (** Well-formed-value guard: all groups must be in [0, 65535].
     The [ipv6] type's refined [ipv6_group] fields guarantee this,
@@ -683,10 +734,12 @@ let wfcv_ipv6 (v: ipv6) : bool =
   0 <= v.group6 && v.group6 <= 65535 &&
   0 <= v.group7 && v.group7 <= 65535
 
+
 (** Well-formed-value property: always True (refinement type guarantees range).
     @param v IPv6 address value.
     @returns [True] (always). *)
 let wfcv_prop_ipv6 (v: ipv6) : prop = True
+
 
 (** Rest condition: suffix must be empty.
     The hex group decoder is digit-greedy — it consumes all consecutive
@@ -703,12 +756,14 @@ let wfcv_prop_ipv6 (v: ipv6) : prop = True
 let rest_cond_ipv6 (v: ipv6) (r: byte_seq) : prop =
   r == Seq.empty
 
+
 (** Encoder: [ipv6 → byte_seq].
     Delegates to the list-level encoder.
     @param v IPv6 address to encode.
     @returns Byte sequence of encoded colon-hex format. *)
 let ipv6_enc (v: ipv6) : byte_seq =
   seq_of_list (encode_ipv6_list v)
+
 
 (** Decoder: [byte_seq → decode_result ipv6].
     Delegates to the list-level decoder.
@@ -718,6 +773,7 @@ let ipv6_dec (s: byte_seq) : decode_result ipv6 =
   match decode_ipv6_list (Seq.seq_to_list s) with
   | Some (v, n) -> Inr (v, n)
   | None -> Inl (mk_decode_error ExpectedPredicate 0)
+
 
 (** Decoder error position bound.
     Body is [()] because [mk_decode_error ExpectedPredicate 0]
@@ -730,6 +786,7 @@ let lemma_ipv6_dec_err_bound (s: byte_seq) : Lemma
             | _ -> True))
   = ()
 
+
 (** Lemma: [decode_hex_group] consumed <= input length. *)
 let lemma_decode_hex_group_list_consumed (ds: list byte) : Lemma
   (ensures (match decode_hex_group ds with
@@ -737,6 +794,7 @@ let lemma_decode_hex_group_list_consumed (ds: list byte) : Lemma
             | None -> True))
   = lemma_decode_hex_group_consumed_bound ds;
     ()
+
 
 (** Lemma: [decode_ipv6_list] consumed <= input length.
     Explicit 8-group decomposition matching the IPv4 [lemma_decode_ipv4_list_consumed]
@@ -846,6 +904,7 @@ let lemma_decode_ipv6_list_consumed (bs: list byte) : Lemma
     end
 #pop-options
 
+
 (** Decoder consumed bound.  Uses [lemma_decode_ipv6_list_consumed].
     @param s Input byte sequence. *)
 let lemma_ipv6_dec_consumed_bound (s: byte_seq) : Lemma
@@ -855,6 +914,7 @@ let lemma_ipv6_dec_consumed_bound (s: byte_seq) : Lemma
   = lemma_seq_list_bij s;
     lemma_decode_ipv6_list_consumed (Seq.seq_to_list s);
     ()
+
 
 (** Roundtrip lemma: encode→decode returns the original value.
     Bridges the list-level proof to byte_seq.  Only handles the
@@ -879,6 +939,7 @@ let lemma_ipv6_roundtrip (v: ipv6) (r: byte_seq) : Lemma
     Seq.lemma_eq_intro (enc_seq `Seq.append` Seq.empty) enc_seq
 #pop-options
 
+
 (** The IPv6 codec: flat [custom] combinator, no [product]/[map_] chain.
     Roundtrip proof bridges the list-level structural induction.
     Zero admits.
@@ -896,12 +957,15 @@ let ipv6_codec : codec ipv6 =
     lemma_ipv6_dec_consumed_bound
 #pop-options
 
+
 (** Public API *)
+
 
 (** [encode_ipv6] serializes an [ipv6] to colon-hex bytes.
     @param ip Address to encode.
     @returns Byte sequence of encoded colon-hex format. *)
 let encode_ipv6 (ip: ipv6) : byte_seq = ipv6_codec.enc ip
+
 
 (** [decode_ipv6] parses colon-hex bytes into an [ipv6].
     @param input Byte sequence to decode.
@@ -909,11 +973,13 @@ let encode_ipv6 (ip: ipv6) : byte_seq = ipv6_codec.enc ip
 let decode_ipv6 (input: byte_seq) : Tot (option ipv6) =
   match ipv6_codec.dec input with Inl _ -> None | Inr (v, _) -> Some v
 
+
 (** Roundtrip wrapper. @param v An ipv6 value.
     @returns Lemma — [decode_ipv6 (encode_ipv6 v ++ empty) == Some v]. *)
 let lemma_encode_ipv6_roundtrip (v: ipv6) : Lemma
   (ensures decode_ipv6 (encode_ipv6 v `Seq.append` Seq.empty) == Some v)
   = lemma_ipv6_roundtrip v Seq.empty
+
 
 (** Codec-level roundtrip (backward compat alias).
     @param v An ipv6 value.
@@ -923,7 +989,9 @@ let lemma_roundtrip (v: ipv6) : Lemma
         == Inr (v, Seq.length (ipv6_codec.enc v)))
   = lemma_ipv6_roundtrip v Seq.empty
 
+
 (** RFC compliance *)
+
 
 (** Corollary: roundtrip for values from [ipv6_of_groups].
     @param g0-g7 Eight group values.
@@ -935,6 +1003,7 @@ let lemma_roundtrip_of_groups (g0 g1 g2 g3 g4 g5 g6 g7: int) : Lemma
     ipv6_codec.dec (ipv6_codec.enc v `Seq.append` Seq.empty) == Inr (v, Seq.length (ipv6_codec.enc v))))
   = let Some v = ipv6_of_groups g0 g1 g2 g3 g4 g5 g6 g7 in
     lemma_roundtrip v
+
 
 (** Lemma: for an [ipv6] that passes [ipv6_of_groups] validation, all group
     fields are in [0, 65535].  The ensures follows from the [ipv6_group]
@@ -953,6 +1022,7 @@ let lemma_ipv6_group_range (v: ipv6) : Lemma
            0 <= v.group6 /\ v.group6 <= 65535 /\
            0 <= v.group7 /\ v.group7 <= 65535)
   = ()
+
 
 (** RFC 4291 §2.2: Hex digits SHALL accept 0-9, a-f, A-F.
     Proves [is_hex b <==> v in ('0'-'9') || ('A'-'F') || ('a'-'f')].
@@ -982,6 +1052,7 @@ let lemma_hex_digit_ranges (b: byte) : Lemma
     end
     else ()
 
+
 (** RFC test vectors — prove roundtrip for well-known addresses.
 
     All vectors use FULL FORM (8 groups, no :: compression).
@@ -991,6 +1062,7 @@ let lemma_hex_digit_ranges (b: byte) : Lemma
     list-level roundtrip lemma.  Zero admits.
 *)
 
+
 (** RFC 4291: loopback ::1 (full form: 0:0:0:0:0:0:0:1).
     @returns Lemma — roundtrip for loopback address. *)
 let lemma_ipv6_loopback_concrete () : Lemma
@@ -999,6 +1071,7 @@ let lemma_ipv6_loopback_concrete () : Lemma
             | _ -> False))
   = lemma_ipv6_list_roundtrip ipv6_loopback
 
+
 (** RFC 4291: unspecified :: (full form: 0:0:0:0:0:0:0:0).
     @returns Lemma — roundtrip for unspecified address. *)
 let lemma_ipv6_unspecified_concrete () : Lemma
@@ -1006,6 +1079,7 @@ let lemma_ipv6_unspecified_concrete () : Lemma
             | Some (ip, _) -> ip = ipv6_unspecified
             | _ -> False))
   = lemma_ipv6_list_roundtrip ipv6_unspecified
+
 
 (** RFC 4291: documentation prefix 2001:db8::/32
     (full form: 2001:0db8:0:0:0:0:0:1).
@@ -1022,6 +1096,7 @@ let lemma_ipv6_doc_concrete () : Lemma
             | _ -> False))
   = lemma_ipv6_list_roundtrip ({group0=0x2001; group1=0x0db8; group2=0; group3=0;
                                  group4=0; group5=0; group6=0; group7=1})
+
 
 (** All-groups-max: ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff.
     Tests the extreme upper bound of every group.
@@ -1040,6 +1115,7 @@ let lemma_ipv6_all_max_concrete () : Lemma
   = lemma_ipv6_list_roundtrip ({group0=0xffff; group1=0xffff; group2=0xffff; group3=0xffff;
                                  group4=0xffff; group5=0xffff; group6=0xffff; group7=0xffff})
 
+
 (** Single-digit groups: 0:1:2:3:4:5:6:7.
     Tests minimal encoding (no leading zeros needed).
     @returns Lemma — roundtrip for single-digit address. *)
@@ -1056,6 +1132,7 @@ let lemma_ipv6_single_digit_concrete () : Lemma
             | _ -> False))
   = lemma_ipv6_list_roundtrip ({group0=0; group1=1; group2=2; group3=3;
                                  group4=4; group5=5; group6=6; group7=7})
+
 
 (** Mixed-case hex: 2001:0Db8:aBcD:Ef01:2345:6789:aBcD:eF01.
     Tests uppercase/lowercase tolerance in decoder.

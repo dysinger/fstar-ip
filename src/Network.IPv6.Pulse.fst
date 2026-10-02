@@ -1,6 +1,7 @@
 (* Copyright 2026 Department of Code LLC.
    SPDX-License-Identifier: AGPL-3.0-or-later *)
 
+
 (**
 Network.IPv6.Pulse — C-extractable IPv6 wire codec via Pulse + Custard.
 
@@ -42,6 +43,7 @@ Written for F* v2026.09.20 (Custard `--custard_backend C`).  Zero admits.
 module Network.IPv6.Pulse
 #lang-pulse
 
+
 open Pulse
 open Pulse.Lib.Reference
 module A = Pulse.Lib.Array
@@ -50,12 +52,16 @@ module U8 = FStar.UInt8
 module U32 = FStar.UInt32
 module Seq = FStar.Seq
 
+
 open FStar.Seq
+
 
 (* ── Types (alphabetical) ──────────────────────────────────────────── *)
 
+
 (** IPv6 wire format size in bytes (128 bits / 8). *)
 let ipv6_wire_size : U32.t = 16ul
+
 
 (** [ipv6_wire] — sixteen octets (128-bit wire format). *)
 type ipv6_wire = {
@@ -65,13 +71,16 @@ type ipv6_wire = {
   octet12: U8.t; octet13: U8.t; octet14: U8.t; octet15: U8.t;
 }
 
+
 (** [opt_ipv6_wire] — option wrapper for the decode result (C-friendly, no
     [option]). *)
 type opt_ipv6_wire =
   | OIPv6_None
   | OIPv6_Some of (ipv6_wire & U32.t)
 
+
 (* ── Pure spec (noextract: not C-representable) ─────────────────────── *)
+
 
 (** [encode_spec addr] — serialize [addr] to a 16-byte list in wire order. *)
 noextract
@@ -80,6 +89,7 @@ let encode_spec (addr: ipv6_wire) : list U8.t =
    addr.octet4; addr.octet5; addr.octet6; addr.octet7;
    addr.octet8; addr.octet9; addr.octet10; addr.octet11;
    addr.octet12; addr.octet13; addr.octet14; addr.octet15]
+
 
 (** [decode_spec bs] — deserialize a 16-byte list to [ipv6_wire] plus
     wire size.  Returns [None] unless [bs] has exactly 16 bytes. *)
@@ -93,7 +103,9 @@ let decode_spec (bs: list U8.t) : option (ipv6_wire & U32.t) =
            octet12=b12;octet13=b13;octet14=b14;octet15=b15}, ipv6_wire_size)
   | _ -> None
 
+
 (* ── Encode ─────────────────────────────────────────────────────────── *)
+
 
 (** [encode addr buf off] — encode an IPv6 address into [buf] at [off];
     returns 16 (bytes written).
@@ -168,7 +180,9 @@ fn encode (addr: ipv6_wire) (buf: A.array U8.t) (off: U32.t)
   16ul
 }
 
+
 (* ── Decode ─────────────────────────────────────────────────────────── *)
+
 
 (** [decode buf off len] — decode an IPv6 address from [buf] at [off].
 
@@ -251,13 +265,16 @@ fn decode (buf: A.array U8.t) (off: U32.t) (len: U32.t)
   }
 }
 
+
 (* ── Roundtrip lemmas (alphabetical) ────────────────────────────────── *)
+
 
 (** [lemma_roundtrip addr] — pure roundtrip: encoding then decoding returns
     the original address. *)
 let lemma_roundtrip (addr: ipv6_wire)
   : Lemma (decode_spec (encode_spec addr) == Some (addr, ipv6_wire_size))
   = ()
+
 
 (** [lemma_pulse_roundtrip addr buf off] — encode then decode an IPv6
     address roundtrips.
@@ -282,6 +299,7 @@ fn lemma_pulse_roundtrip (addr: ipv6_wire) (buf: A.array U8.t) (off: U32.t)
   let r = decode buf off ipv6_wire_size;
   (n, r)
 }
+
 
 (** [lemma_pulse_encode_decode_match addr buf off] — master roundtrip for
     IPv6.
