@@ -44,8 +44,8 @@ The pure spec modules (`Network.IP`, `Network.IPv4`, `Network.IPv6`) open
 
 ## Dependencies
 
-- [fstar-codec] — `Data.Codec` / `Data.Codec.Types` (record codec framework)
-- [fstar-basen] — `Data.BaseN` (RFC 4648 base encodings; `Base16` for hex)
+- [codec] — `Data.Codec` / `Data.Codec.Types` (record codec framework)
+- [basen] — `Data.BaseN` (RFC 4648 base encodings; `Base16` for hex)
 
 Both consumed as flake inputs (`github:dysinger/fstar-codec`,
 `github:dysinger/fstar-basen`), pinned in `flake.lock`.

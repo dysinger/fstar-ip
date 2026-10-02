@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
 {
-  description = "fstar-ip — verified IPv4/IPv6 address codecs";
+  description = "ip — verified IPv4/IPv6 address codecs";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/c31cf09";
@@ -190,7 +190,7 @@
 
         checks.formatting = treefmtModule.config.build.check self;
 
-        # The build targets are named by deliverable (no `fstar-ip-`
+        # The build targets are named by deliverable (no `ip-`
         # prefix); `default` aliases `native` (the C11 shared/static lib).
         packages.default = _pkg.native;
         packages.checked = _pkg.checked;

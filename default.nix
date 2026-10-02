@@ -1,7 +1,7 @@
 # Copyright 2026 Department of Code LLC.
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-# fstar-ip — Network.IP / Network.IPv4 / Network.IPv6 verified address codecs.
+# ip — Network.IP / Network.IPv4 / Network.IPv6 verified address codecs.
 #
 # Takes the F* toolchain as concrete derivations (no `pkgs` blob, no overlay
 # assumption, no module-name/order arguments).  Module names and their
@@ -41,7 +41,7 @@
 let
   inherit (stdenv) mkDerivation;
 
-  # Package name.  The repo/flake are "fstar-ip", but the internal
+  # Package name.  The package is "ip" (git repo "fstar-ip"), but the internal
   # derivation/artifact names drop the "fstar-" prefix.
   pname = "ip";
 

@@ -1,8 +1,8 @@
-# fstar-ip — Agent Guide & Handoff
+# ip — Agent Guide & Handoff
 
 `Network.IP` / `Network.IPv4` / `Network.IPv6` — verified IP address codecs,
 extracted from the xeno monorepo (`ip/`) as a standalone repo.  Depends on
-`fstar-codec` (`Data.Codec`) AND `fstar-basen` (`Data.BaseN`).  F* source is
+`codec` (`Data.Codec`) AND `basen` (`Data.BaseN`).  F* source is
 0-admit.
 
 ## ⛔ MANDATES (binding — read before doing anything)
@@ -11,7 +11,7 @@ extracted from the xeno monorepo (`ip/`) as a standalone repo.  Depends on
    can hang forever.  **Always** run them **detached** and poll the log:
 
    ```bash
-   cd /Users/user/_/fstar-ip
+   cd /Users/user/_/ip
    rm -f /tmp/ip-build.log
    nohup nix build .#checked --print-out-paths --no-link > /tmp/ip-build.log 2>&1 &
    # … poll: tail /tmp/ip-build.log ; ps -p $!
@@ -23,14 +23,14 @@ extracted from the xeno monorepo (`ip/`) as a standalone repo.  Depends on
    it is now cached).
 
 2. **The F\* overlay in `flake.nix` MUST stay byte-identical to
-   `fstar-codec`/`fstar-basen`'s.**  Any comment/whitespace change to the
+   `codec`/`basen`'s.**  Any comment/whitespace change to the
    `buildPhase`/`installPhase` strings changes the derivation hash and forces a
    full F\* bootstrap.  Do NOT touch those strings.
 
-3. **The dependency pins.**  `flake.nix` consumes `fstar-codec` AND
-   `fstar-basen` from the published `github:dysinger/*` repos (pinned to HEAD in
+3. **The dependency pins.**  `flake.nix` consumes `codec` AND
+   `basen` from the published `github:dysinger/*` repos (pinned to HEAD in
    `flake.lock`).  Both are pinned to the SAME `fstar` commit (`cf84795`,
-   `v2026.09.20+lsp`) as fstar-basen, so the F\* bootstrap stays cached.
+   `v2026.09.20+lsp`) as basen, so the F\* bootstrap stays cached.
 
 ## ✅ Current state — Pulse port DONE, 4/4 targets GREEN (this session)
 
@@ -54,7 +54,7 @@ Target names: `default = native`, `checked`, `ocaml`, `native`, `fsharp`.
 
 ### The TWO-Pulse-leaf Custard extraction (this session — the hard part)
 
-All three reference repos (`fstar-codec`, `fstar-basen`, `fstar-text`) have
+All three reference repos (`codec`, `basen`, `text`) have
 exactly ONE Pulse leaf.  ip has TWO (`Network.IPv4.Pulse` + `Network.IPv6.Pulse`).
 Custard's whole-program `--codegen Custard` (a.k.a. `--ext fly_deps`) takes
 **exactly one `.fst` input file** — passing both fails with `Error 10: When
@@ -69,7 +69,7 @@ there is no name collision.  `--custard_split` does NOT split the C backend
 (it only splits OCaml/karamel), so the single-input + cross-module-entries
 trick is the required shape.
 
-### Pulse idiom notes (carried from fstar-codec/fstar-text)
+### Pulse idiom notes (carried from codec/text)
 
 - **Direct `Seq.index` post-conditions, not `Seq.slice == seq_of_list`.**  The
   encode `fn` posts `Seq.index s1 (off+k) == addr.octet_k` directly; the decode
@@ -112,13 +112,13 @@ The Pulse leaves are trivial tag/byte codecs: 4 (IPv4) / 16 (IPv6) byte
 writes/reads through `Pulse.Lib.Array.array`, `encode`/`decode`, plus
 `lemma_roundtrip` (pure) / `lemma_pulse_roundtrip` /
 `lemma_pulse_encode_decode_match`.  No varint or multi-byte arithmetic, so the
-word16/word32 SMT-hang complexity from `fstar-codec` does not apply.
+word16/word32 SMT-hang complexity from `codec` does not apply.
 
 ## Dependencies (two flake inputs)
 
-- `fstar-codec` — provides `codec-src`/`codec-checked`.  `Data.Codec` /
+- `codec` — provides `codec-src`/`codec-checked`.  `Data.Codec` /
   `Data.Codec.Types` (`byte`, `digits_to_int_decode_go`).
-- `fstar-basen` — provides `basen-src`/`basen-checked`.  `Data.BaseN` /
+- `basen` — provides `basen-src`/`basen-checked`.  `Data.BaseN` /
   `Data.BaseN.Base16` (`is_hex`, `nibble_to_upper_hex`, `hex_char_to_nibble`).
 
 Both are needed for **verification** (IPv4/IPv6 `open` them).  For **OCaml
@@ -141,9 +141,9 @@ nix develop && make check   # dev loop (no nix)
 
 ## Reference
 
-- Canonical references: `../fstar-codec` (its `Data.Codec.Pulse`,
-  `flake.nix`, `default.nix` are the Custard-era shape), `../fstar-basen` (the
-  downstream-dependency shape this repo mirrors), `../fstar-text` (the Pulse
+- Canonical references: `../codec` (its `Data.Codec.Pulse`,
+  `flake.nix`, `default.nix` are the Custard-era shape), `../basen` (the
+  downstream-dependency shape this repo mirrors), `../text` (the Pulse
   tag-codec idiom).
 - The F\* skill: `~/.pi/agent/skills/fstar/fstar-2026.09.20/SKILL.md`
   (Custard, Pulse idiom, `U8.v`/`U32.v` → `Int.Cast`, the dead-Low\* delta).
