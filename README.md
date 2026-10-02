@@ -33,7 +33,7 @@ The pure spec modules (`Network.IP`, `Network.IPv4`, `Network.IPv6`) open
 - **IPv6 colon-hex only.**  `::` zero-compression (RFC 4291 §2.2 item 2) is
   NOT supported; all 8 groups must be present in text form.
 - **C extraction.**  The Pulse leaves extract to C11 (and OCaml, F#) via
-  Custard (`--custard_backend C`, no KaRaMeL).
+  Custard (`--custard_backend C`).
 
 ## Wire format
 

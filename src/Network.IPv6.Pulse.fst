@@ -4,9 +4,7 @@
 (**
 Network.IPv6.Pulse — C-extractable IPv6 wire codec via Pulse + Custard.
 
-The Custard-era replacement for the retired KaRaMeL
-[Network.IPv6.Low] (which used [LowStar.Buffer]/[Stack]; both namespaces
-were removed from F* ≥ v2026.09.20).  A 16-byte (128-bit) wire format:
+A 16-byte (128-bit) wire format:
 sixteen octets in network byte order, written/read through a
 [Pulse.Lib.Array.array].
 
@@ -16,8 +14,8 @@ text representation (the text codec is in [Network.IPv6]).
 Each encode/decode `fn` carries a byte-level post-condition tied to the
 pure spec [encode_spec]/[decode_spec] (both `noextract`).  Buffer writes
 are lossless in Pulse, so individual index post-conditions per byte prove
-cleanly here; the KaRaMeL-era 16-write SMT-scaling workaround collapses to
-a direct Pulse [Seq.index] correspondence.
+cleanly here; the earlier 16-write SMT-scaling concern collapses to a direct
+Pulse [Seq.index] correspondence.
 
 Written for F* v2026.09.20 (Custard `--custard_backend C`).  Zero admits.
 

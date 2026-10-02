@@ -4,9 +4,7 @@
 (**
 Network.IPv4.Pulse — C-extractable IPv4 wire codec via Pulse + Custard.
 
-The Custard-era replacement for the retired KaRaMeL
-[Network.IPv4.Low] (which used [LowStar.Buffer]/[Stack]; both namespaces
-were removed from F* ≥ v2026.09.20).  A 4-byte (32-bit) wire format:
+A 4-byte (32-bit) wire format:
 four octets in network byte order, written/read through a
 [Pulse.Lib.Array.array].
 
