@@ -55,8 +55,6 @@ FSTAR_FLAGS = --no_default_includes \
 #
 # Network.IP is the shared leaf (drop/list lemmas).  Network.IPv4 and
 # Network.IPv6 open Data.Codec + Data.BaseN + Network.IP.  The .Pulse
-# modules are the Custard-era Pulse leaves (the old KaRaMeL .Low modules
-# were deleted with the Low* stdlib in v2026.09.20).
 SRC_MODS := Network.IP Network.IPv4 Network.IPv6 \
             Network.IPv4.Pulse Network.IPv6.Pulse
 

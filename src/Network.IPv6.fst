@@ -1,3 +1,6 @@
+(* Copyright 2026 Department of Code LLC.
+   SPDX-License-Identifier: AGPL-3.0-or-later *)
+
 (**
 Network.IPv6 — IPv6 Address codec (RFC 4291 §2.2).
 

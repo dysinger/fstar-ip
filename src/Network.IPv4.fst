@@ -1,3 +1,6 @@
+(* Copyright 2026 Department of Code LLC.
+   SPDX-License-Identifier: AGPL-3.0-or-later *)
+
 (**
 Network.IPv4 — IPv4 Address codec (RFC 791 §3.1).
 

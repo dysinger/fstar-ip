@@ -1,4 +1,4 @@
-# Network.IP — Verified IPv4/IPv6 Address Codecs
+# ip — verified IPv4/IPv6 address codecs
 
 A formally verified IP address codec library in F*, built on the record-based
 [Data.Codec] combinator framework and the [Data.BaseN] base encodings.
