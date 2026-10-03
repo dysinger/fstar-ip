@@ -1,7 +1,7 @@
 <div align="center">
   <h1>License</h1>
-  <p><strong>ip</strong> — formally verified IPv4 / IPv6 address codecs
-  written in F\*.</p>
+  <p><strong>ip</strong> — a formally verified IPv4 / IPv6 address codec
+  library written in F\*.</p>
 </div>
 
 ---
